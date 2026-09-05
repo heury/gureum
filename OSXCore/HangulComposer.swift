@@ -116,6 +116,78 @@ final class HangulComposer: NSObject, Composer {
   /// 합성 중인 문자열. 현재는 JDK 호환 모드에만 사용된다.
   private var _composedString: String
 
+  // Shin P2 uses the left-hand keys as vowels after an initial consonant,
+  // and as final consonants after a vowel. Only right-hand compound-vowel
+  // prefixes allow those keys to continue a vowel. Keep this state alongside
+  // libhangul's composition stack so Backspace restores the same interpretation.
+  private var isShinP2 = false
+  private var shinP2RightVowel = false
+  private var shinP2History: [Bool] = []
+  private var shinP2Vowel: UInt32 = 0
+
+  private static let shinP2Vowels: [UInt32: UInt32] = [
+    0x11a8: 0x1166, 0x11ab: 0x1168, 0x11ae: 0x1173, 0x11af: 0x1163,
+    0x11b7: 0x119e, 0x11b8: 0x1162, 0x11ba: 0x1164, 0x11bb: 0x116d,
+    0x11bc: 0x1172, 0x11bd: 0x1169, 0x11be: 0x116e, 0x11bf: 0x1167,
+    0x11c0: 0x1165, 0x11c1: 0x1161, 0x11c2: 0x1175,
+  ]
+  private static let shinP2CompoundVowels: Set<UInt32> = [
+    0x1161_1169, 0x1162_1169, 0x1165_116e, 0x1166_116e,
+    0x1169_1161, 0x1169_1162, 0x1169_1175,
+    0x116e_1165, 0x116e_1166, 0x116e_1175,
+    0x1173_1175, 0x1175_1162, 0x1175_1169, 0x1175_116e,
+    0x119e_1175, 0x119e_119e,
+  ]
+
+  private func translateShinP2(_ value: UInt32) -> UInt32 {
+    if inputContext.hasChoseong && !inputContext.hasJungseong {
+      let rightVowels: [UInt32: UInt32] = [
+        0x1106: 0x1173, 0x110e: 0x116e, 0x110f: 0x1169, 0x1111: 0x119e,
+      ]
+      if let vowel = rightVowels[value] {
+        shinP2RightVowel = true
+        return vowel
+      }
+      if let vowel = Self.shinP2Vowels[value] { return vowel }
+    }
+    if shinP2RightVowel && inputContext.hasJungseong && !inputContext.hasJongseong,
+      let vowel = Self.shinP2Vowels[value],
+      Self.shinP2CompoundVowels.contains((shinP2Vowel << 16) | vowel)
+    {
+      return vowel
+    }
+    return value
+  }
+
+  private func processHangul(_ ascii: UInt32) -> Bool {
+    guard isShinP2 else { return inputContext.process(ascii) }
+    let previousRightVowel = shinP2RightVowel
+    let first = inputContext.preeditUCSString[0]
+    if (0xac00...0xd7a3).contains(first) {
+      shinP2Vowel = 0x1161 + ((first - 0xac00) / 28) % 21
+    } else {
+      shinP2Vowel = 0
+      for index in 0..<64 {
+        let scalar = inputContext.preeditUCSString[index]
+        if scalar == 0 { break }
+        if (0x1161...0x11a7).contains(scalar) { shinP2Vowel = scalar }
+        if let jamo = table.first(where: {
+          $0.value == scalar && (0x1161...0x11a7).contains($0.key)
+        }) {
+          shinP2Vowel = jamo.key
+        }
+      }
+    }
+    let handled = inputContext.process(ascii)
+    if inputContext.commitUCSString[0] != 0 || inputContext.isEmpty {
+      shinP2History.removeAll()
+      shinP2RightVowel = false
+    } else {
+      shinP2History.append(previousRightVowel)
+    }
+    return handled
+  }
+
   let inputContext: HGInputContext
   let configuration = Configuration.shared
 
@@ -202,10 +274,14 @@ final class HangulComposer: NSObject, Composer {
     _commitString.append(_composedString)
     _commitString.append(flushedString)
     _composedString = ""
+    shinP2History.removeAll()
+    shinP2RightVowel = false
   }
 
   func clearCompositionContext() {
     inputContext.reset()
+    shinP2History.removeAll()
+    shinP2RightVowel = false
     _commitString = ""
     _composedString = ""
   }
@@ -235,7 +311,11 @@ final class HangulComposer: NSObject, Composer {
         _composedString.removeLast()
         return .processed
       }
-      return inputContext.backspace() ? .processed : .notProcessed
+      let handled = inputContext.backspace()
+      if isShinP2 && handled {
+        shinP2RightVowel = shinP2History.popLast() ?? false
+      }
+      return handled ? .processed : .notProcessed
     }
 
     if !keyCode.isKeyMappable || [.delete, .return, .tab, .space].contains(keyCode) {
@@ -253,7 +333,7 @@ final class HangulComposer: NSObject, Composer {
     // 모든 한글 자판은 QWERTY 위치를 기준으로 정의되어 있다.
     // 키보드에서 이미 DHK로 바뀐 입력을 libhangul에 전달하기 전에 역변환한다.
     string = qwertyCharacter(fromColemakDHK: string)
-    let handled = inputContext.process(string.unicodeScalars.first!.value)
+    let handled = processHangul(string.unicodeScalars.first!.value)
     let ucsString = inputContext.commitUCSString
     let recentCommitString = representableString(ucsString: ucsString)
 
@@ -308,6 +388,26 @@ extension HangulComposer {
   ///
   /// - Parameter identifier: `libhangul`의 `hangul_ic_select_keyboard`를 참고한다.
   func setKeyboard(identifier: String) {
+    isShinP2 = identifier == "3shin-p2"
+    shinP2RightVowel = false
+    shinP2History.removeAll()
+    if isShinP2 {
+      let translate:
+        @convention(c) (
+          OpaquePointer?, Int32, UnsafeMutablePointer<UInt32>?, UnsafeMutableRawPointer?
+        ) -> Void = { _, _, value, data in
+          guard let value = value, let data = data else { return }
+          let composer = Unmanaged<HangulComposer>.fromOpaque(data).takeUnretainedValue()
+          value.pointee = composer.translateShinP2(value.pointee)
+        }
+      hangul_ic_connect_callback(
+        inputContext.context, "translate",
+        unsafeBitCast(translate, to: UnsafeMutableRawPointer.self),
+        Unmanaged.passUnretained(self).toOpaque())
+    } else {
+      hangul_ic_connect_callback(inputContext.context, "translate", nil, nil)
+    }
+
     if configuration.hangulForceStrictCombinationRule, identifier == "39" || identifier == "3f" {
       let strictCombinationIdentifier = "\(identifier)s"
       inputContext.setKeyboardWithIdentifier(strictCombinationIdentifier)

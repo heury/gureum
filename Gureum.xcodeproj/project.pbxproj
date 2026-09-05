@@ -22,6 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		AB5300010000000000000001 /* hangul-keyboard-3shin-p2.xml in Copy Keyboards Files */ = {isa = PBXBuildFile; fileRef = AB5300010000000000000002 /* hangul-keyboard-3shin-p2.xml */; };
 		19136D73234090AA00A0BF3C /* SearchComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19136D72234090AA00A0BF3C /* SearchComposer.swift */; };
 		19A1229A23477D2700525AEC /* TISInputSource+.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A1229923477D2700525AEC /* TISInputSource+.swift */; };
 		19A122A323477DE900525AEC /* GureumShortcutValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19A122A223477DE900525AEC /* GureumShortcutValidator.swift */; };
@@ -240,6 +241,7 @@
 			dstPath = Hangul.framework/Resources/keyboards;
 			dstSubfolderSpec = 16;
 			files = (
+				AB5300010000000000000001 /* hangul-keyboard-3shin-p2.xml in Copy Keyboards Files */,
 				D98806252931170A0073EF2F /* hangul-combination-3fs.xml in Copy Keyboards Files */,
 				80A02B24217E1AA90018E658 /* hangul-keyboard-2y-full.xml in Copy Keyboards Files */,
 				80A02B25217E1AA90018E658 /* hangul-keyboard-2-full.xml in Copy Keyboards Files */,
@@ -284,6 +286,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AB5300010000000000000002 /* hangul-keyboard-3shin-p2.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "hangul-keyboard-3shin-p2.xml"; sourceTree = "<group>"; };
 		19136D72234090AA00A0BF3C /* SearchComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchComposer.swift; sourceTree = "<group>"; };
 		19A1229923477D2700525AEC /* TISInputSource+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TISInputSource+.swift"; sourceTree = "<group>"; };
 		19A122A223477DE900525AEC /* GureumShortcutValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GureumShortcutValidator.swift; sourceTree = "<group>"; };
@@ -532,6 +535,7 @@
 		3835B4F41F5DAA7100896BEC /* keyboards */ = {
 			isa = PBXGroup;
 			children = (
+				AB5300010000000000000002 /* hangul-keyboard-3shin-p2.xml */,
 				3835B4F51F5DAA7100896BEC /* hangul-combination-3gc.xml */,
 				3835B4F61F5DAA7100896BEC /* hangul-combination-3gs.xml */,
 				3835B53E1F5DAC3500896BEC /* hangul-combination-3f.xml */,

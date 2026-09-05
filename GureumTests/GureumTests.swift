@@ -50,6 +50,66 @@ class GureumTests: XCTestCase {
     super.tearDown()
   }
 
+  func testShinP2Composition() {
+    let examples = [
+      ("mfskgw", "한글"), ("k/f", "과"), ("kvf", "곺"),
+      ("kor", "궈"), ("kid", "긔"), ("kkf", "까"),
+      ("kfwc", "갉"), ("kfF", "가ㅏ"), ("123!", "123!"),
+    ]
+    for (keys, expected) in examples {
+      let app = ModerateApp()
+      app.controller.setValue(
+        "org.youknowone.inputmethod.Gureum.han3shin-p2",
+        forTag: kTextServiceInputModePropertyTag, client: app.client)
+      // The configured hardware emits Colemak DHK; express examples in P2's QWERTY coordinates.
+      for key in keys {
+        let hardwareKey = (33...126).compactMap { UnicodeScalar($0) }.map { String($0) }
+          .first { qwertyCharacter(fromColemakDHK: $0) == String(key) }!
+        app.inputKeys(hardwareKey)
+      }
+      XCTAssertEqual(app.client.string, expected, keys)
+    }
+  }
+
+  func testShinP2BackspaceAndLayoutSwitch() {
+    let app = ModerateApp()
+    func select(_ mode: String) {
+      app.controller.setValue(
+        "org.youknowone.inputmethod.Gureum." + mode,
+        forTag: kTextServiceInputModePropertyTag, client: app.client)
+    }
+    func type(_ keys: String) {
+      for key in keys {
+        let hardwareKey = (33...126).compactMap { UnicodeScalar($0) }.map { String($0) }
+          .first { qwertyCharacter(fromColemakDHK: $0) == String(key) }!
+        app.inputKeys(hardwareKey)
+      }
+    }
+    select("han3shin-p2")
+    type("k/f")
+    XCTAssertEqual(app.client.string, "과")
+    app.inputDelete()
+    XCTAssertEqual(app.client.string, "고")
+    type("d")
+    XCTAssertEqual(app.client.string, "괴")
+    app.inputDelete()
+    app.inputDelete()
+    XCTAssertEqual(app.client.string, "ㄱ")
+    type("vf")
+    XCTAssertEqual(app.client.string, "곺")
+    app.inputText(" ", key: .space, modifiers: [])
+    type("k/f")
+    XCTAssertEqual(app.client.string, "곺 과")
+    app.inputText(" ", key: .space, modifiers: [])
+    select("han2")
+    type("gksrmf")
+    XCTAssertEqual(app.client.string, "곺 과 한글")
+    app.inputText(" ", key: .space, modifiers: [])
+    select("han3shin-p2")
+    type("mfskgw")
+    XCTAssertEqual(app.client.string, "곺 과 한글 한글")
+  }
+
   func testColemakDHKToQwerty() {
     let rows = [
       ("qwfpbjluy;", "qwertyuiop"),
