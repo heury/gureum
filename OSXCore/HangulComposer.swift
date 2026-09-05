@@ -250,6 +250,9 @@ final class HangulComposer: NSObject, Composer {
     } else {
       string = keyMapLower[keyCode.rawValue] ?? string
     }
+    // 모든 한글 자판은 QWERTY 위치를 기준으로 정의되어 있다.
+    // 키보드에서 이미 DHK로 바뀐 입력을 libhangul에 전달하기 전에 역변환한다.
+    string = qwertyCharacter(fromColemakDHK: string)
     let handled = inputContext.process(string.unicodeScalars.first!.value)
     let ucsString = inputContext.commitUCSString
     let recentCommitString = representableString(ucsString: ucsString)

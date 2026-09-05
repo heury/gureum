@@ -46,6 +46,8 @@ enum GureumInputSource: String {
   case han3FinalNoShift = "org.youknowone.inputmethod.Gureum.han3finalnoshift"
   /// 한글 세벌식 2011 자판.
   case han32011 = "org.youknowone.inputmethod.Gureum.han3-2011"
+  /// 한글 신세벌식 P2 자판.
+  case han3shin_p2 = "org.youknowone.inputmethod.Gureum.han3shin-p2"
   /// 한글 세벌식 2012 자판.
   case han32012 = "org.youknowone.inputmethod.Gureum.han3-2012"
 }
@@ -348,6 +350,8 @@ extension GureumInputSource {
       return "3gs"
     case .han32011:
       return "3-2011"
+    case .han3shin_p2:
+      return "3shin-p2"
     case .han32012:
       return "3-2012"
     }

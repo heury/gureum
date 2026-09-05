@@ -50,6 +50,24 @@ class GureumTests: XCTestCase {
     super.tearDown()
   }
 
+  func testColemakDHKToQwerty() {
+    let rows = [
+      ("qwfpbjluy;", "qwertyuiop"),
+      ("arstgkneio", "asdfghjkl;"),
+      ("xcdvzmh", "zxcvbnm"),
+      ("QWFPBJLUY:", "QWERTYUIOP"),
+      ("ARSTGKNEIO", "ASDFGHJKL:"),
+      ("XCDVZMH", "ZXCVBNM"),
+    ]
+    for (input, expected) in rows {
+      let actual = input.map { qwertyCharacter(fromColemakDHK: String($0)) }.joined()
+      XCTAssertEqual(actual, expected)
+    }
+    for character in "1234567890!@#$%^&*()-_=+[]{}\\\\|\"'`,.<>/?~ " {
+      XCTAssertEqual(qwertyCharacter(fromColemakDHK: String(character)), String(character))
+    }
+  }
+
   func testPreferencePane() {
     let path = Bundle.main.path(forResource: "Preferences", ofType: "prefPane")
     let bundle = NSPrefPaneBundle(path: path)!

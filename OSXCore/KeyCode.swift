@@ -186,6 +186,18 @@ let keyMapUpper = [
   nil, nil, "~",
 ]
 
+/// 키보드 펌웨어가 보내는 Colemak Mod-DHK 문자를 원래 QWERTY 위치로 되돌린다.
+/// Mod-DH에서 M/K를 교환한 배열이며, Shift의 세미콜론/콜론도 함께 변환한다.
+private let colemakDHKToQwerty: [String: String] = {
+  let dhk = "qwfpbjluy;arstgkneioxcdvzmhQWFPBJLUY:ARSTGKNEIOXCDVZMH"
+  let qwerty = "qwertyuiopasdfghjkl;zxcvbnmQWERTYUIOPASDFGHJKL:ZXCVBNM"
+  return Dictionary(uniqueKeysWithValues: zip(dhk, qwerty).map { (String($0.0), String($0.1)) })
+}()
+
+func qwertyCharacter(fromColemakDHK character: String) -> String {
+  return colemakDHKToQwerty[character] ?? character
+}
+
 let keyMapReversed = {
   var map: [String: (KeyCode, NSEvent.ModifierFlags)] = [:]
   for (rawValue, key) in keyMapLower.enumerated() {
